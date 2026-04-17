@@ -1,0 +1,9 @@
+chromadb
+faiss-cpu
+langchain
+langchain-google-genai
+langchain-tavily
+langgraph
+python-dotenv
+requests
+tavily-python

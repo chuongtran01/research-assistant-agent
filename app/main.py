@@ -1,4 +1,5 @@
 from graph.builder import build_graph
+from langchain_core.messages import HumanMessage
 
 if __name__ == "__main__":
     graph = build_graph()
@@ -9,6 +10,7 @@ if __name__ == "__main__":
         result = graph.invoke({
             "query": query,
             "chat_history": [],
+            "memory": [],
             "plan": [],
             "current_step_index": 0,
             "current_task": None,

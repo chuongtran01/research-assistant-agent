@@ -15,7 +15,7 @@ def build_graph() -> StateGraph:
     graph.add_node("router", router_node)
     graph.add_node("web_search", web_search_node)
     graph.add_node("summarize", summarize_node)
-    # graph.add_node("memory", memory_node)
+    graph.add_node("memory", memory_node)
     graph.add_node("final", final_node)
 
     graph.add_edge(START, "planner")
@@ -27,13 +27,14 @@ def build_graph() -> StateGraph:
         {
             "web_search": "web_search",
             "summarize": "summarize",
+            "memory": "memory",
             "final": "final",
         },
     )
 
     graph.add_edge("web_search", "summarize")
     graph.add_edge("summarize", "router")
-    # graph.add_edge("memory", "router")
+    graph.add_edge("memory", "router")
 
     graph.add_edge("final", END)
 

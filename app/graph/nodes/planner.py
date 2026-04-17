@@ -4,6 +4,7 @@ from graph.state import AgentState, TaskModel
 from tools.llm import LLM
 from pydantic import BaseModel
 from typing import Annotated
+from langchain_core.messages import SystemMessage
 
 
 class PlanModel(BaseModel):
@@ -11,33 +12,48 @@ class PlanModel(BaseModel):
 
 
 SYSTEM_PROMPT = """
-You are a planning agent.
+You are a planning agent that converts a user query into a sequence of executable steps.
 
-Your job is to break a user query into a sequence of executable steps.
+You are NOT calling functions. You are defining a plan for a state-driven execution system.
 
-Available tools:
-- web_search(query: string)
-- summarize(text: string)
-- final(answer: string)
-- memory(facts: string)
+Available actions:
+- web_search: performs a web search using the provided query
+- summarize: summarizes search results stored in state
+- memory: extracts durable facts from summary
+- final: produces final answer
+
+Execution model:
+- Steps are executed sequentially by a state machine
+- Some steps use arguments (only when required)
+- Nodes read shared state and/or step arguments
 
 Rules:
-- If the query requires external knowledge → start with web_search
-- Always summarize after retrieving information
-- Store useful insights in memory if relevant
+- If external knowledge is needed, start with web_search
+- Always run summarize after web_search
+- Always store useful insights using memory
 - Always end with final
-- Keep steps minimal but sufficient
+- Keep the plan minimal and efficient
 
-Each step must include:
-- name: tool name
-- description: what the step does
-- args: dictionary of arguments
+Output format (STRICT):
 
-IMPORTANT:
+{
+  "steps": [
+    {
+      "name": "web_search | summarize | memory | final",
+      "description": "what this step does",
+      "args": {
+        "query": "only required for web_search"
+      }
+    }
+  ]
+}
+
+Important rules:
+- ONLY web_search should use args.query
+- summarize, memory, final should use empty args {}
 - Return ONLY valid JSON
 - No explanation
 - No markdown
-- No extra text
 """
 
 PLANNER_PROMPT = """
@@ -64,7 +80,7 @@ def planner_node(state: AgentState) -> AgentState:
 
     return {
         **state,
-        "chat_history": query,
+        "chat_history": SystemMessage(content=query),
         "plan": [step.model_dump() for step in plan.steps],
         "current_step_index": 0
     }

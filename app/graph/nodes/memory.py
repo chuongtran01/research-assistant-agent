@@ -59,4 +59,5 @@ def memory_node(state: AgentState) -> AgentState:
     return {
         **state,
         "memory": memory_messages,
+        "current_step_index": state["current_step_index"] + 1,
     }

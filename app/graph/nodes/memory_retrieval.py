@@ -1,5 +1,5 @@
 from graph.state import AgentState
-from memory.vector_store import retrieve_memories
+from memory.vector_store import vector_store
 
 
 def memory_retrieval_node(state: AgentState) -> dict:
@@ -10,11 +10,10 @@ def memory_retrieval_node(state: AgentState) -> dict:
 
     query = state.get("query", "") or ""
 
-    memories = retrieve_memories()
+    results = vector_store.similarity_search(query, k=5)
 
-    results = [
-        mem["fact"] for mem in memories
-        if query.lower() in mem["fact"].lower()
+    memory_context = [
+        mem.page_content for mem in results
     ]
 
-    return {"memory_context": results}
+    return {"memory_context": memory_context}

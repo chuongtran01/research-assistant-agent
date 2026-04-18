@@ -1,15 +1,11 @@
-from typing import List
-import time
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_chroma import Chroma
 
-MEMORY_DB: List[dict] = []
+# Embeddings model
+embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001")
 
-
-def add_memory(memory: str) -> None:
-    MEMORY_DB.append({
-        "fact": memory,
-        "timestamp": time.time()
-    })
-
-
-def retrieve_memories() -> List[str]:
-    return MEMORY_DB
+# Persistent vector store
+vector_store = Chroma(
+    collection_name="memory",
+    embedding_function=embeddings,
+    persist_directory="chroma_db")

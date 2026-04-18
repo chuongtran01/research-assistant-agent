@@ -79,7 +79,6 @@ def planner_node(state: AgentState) -> AgentState:
     query = state["query"]
 
     memories = state.get("memory_context") or []
-    print("Memories", memories)
     memory_block = "\n".join(
         f"- {m}" for m in memories) if memories else "(none)"
 

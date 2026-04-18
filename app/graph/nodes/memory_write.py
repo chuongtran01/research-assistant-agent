@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Annotated, List
 from tools.llm import LLM
 
-from memory.vector_store import add_memory
+from tools.memory import store_memory
 
 
 class Memory(BaseModel):
@@ -51,8 +51,7 @@ def memory_write_node(state: AgentState) -> AgentState:
     if not facts:
         return state
 
-    for fact in facts:
-        add_memory(fact)
+    store_memory(facts)
 
     return {
         "current_step_index": state["current_step_index"] + 1,

@@ -1,5 +1,4 @@
 from graph.builder import build_graph
-from memory.vector_store import retrieve_memories
 
 if __name__ == "__main__":
     graph = build_graph()
@@ -18,9 +17,5 @@ if __name__ == "__main__":
             "summary": "",
             "final_answer": "",
         })
-
-        print("Memory", retrieve_memories())
-
-        print("--------------------------------")
 
         print("Answer: ", result["final_answer"])

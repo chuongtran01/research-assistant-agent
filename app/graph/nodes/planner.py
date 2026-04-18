@@ -21,7 +21,7 @@ Decide whether the assistant should:
 - direct_answer: answer from prior memory alone
 
 - Choose research when the question depends on fresh, external, missing, or uncertain information
-- Choose direct_answer only when the prior memories are clearly sufficient to answer well
+- Choose direct_answer when the question can be answered well without web search
 - If the user asks about recent, latest, current, or time-sensitive information, choose research
 - Return ONLY valid JSON
 - No explanation

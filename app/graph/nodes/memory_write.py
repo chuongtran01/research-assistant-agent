@@ -2,7 +2,8 @@ from graph.state import AgentState
 from pydantic import BaseModel
 from typing import Annotated, List
 from tools.llm import LLM
-from langchain_core.messages import SystemMessage
+
+from memory.vector_store import add_memory
 
 
 class Memory(BaseModel):
@@ -10,7 +11,7 @@ class Memory(BaseModel):
 
 
 SYSTEM_PROMPT = """
-You are a memory agent that extract 1-2 durable facts from the given information.
+You are a memory agent that extract 1-2 durable facts from the given information and store them in the memory database.
 
 IMPORTANT:
 - Return ONLY valid JSON
@@ -29,12 +30,12 @@ Information:
 """
 
 
-def memory_node(state: AgentState) -> AgentState:
+def memory_write_node(state: AgentState) -> AgentState:
     """
-    Memory node that stores the agent's response.
+    Persists durable facts from the summary into long-term memory.
     """
 
-    print("Memory Node invoked")
+    print("Memory Write Node invoked")
 
     llm = LLM(system_prompt=SYSTEM_PROMPT, structured_output=Memory)
 
@@ -50,14 +51,9 @@ def memory_node(state: AgentState) -> AgentState:
     if not facts:
         return state
 
-    # Convert to structured memory messages
-    memory_messages = [
-        SystemMessage(content=f"[MEMORY] {fact}")
-        for fact in facts
-    ]
+    for fact in facts:
+        add_memory(fact)
 
     return {
-        **state,
-        "memory": memory_messages,
         "current_step_index": state["current_step_index"] + 1,
     }

@@ -1,5 +1,5 @@
 from graph.builder import build_graph
-from langchain_core.messages import HumanMessage
+from memory.vector_store import retrieve_memories
 
 if __name__ == "__main__":
     graph = build_graph()
@@ -10,7 +10,7 @@ if __name__ == "__main__":
         result = graph.invoke({
             "query": query,
             "chat_history": [],
-            "memory": [],
+            "memory_context": [],
             "plan": [],
             "current_step_index": 0,
             "current_task": None,
@@ -19,4 +19,8 @@ if __name__ == "__main__":
             "final_answer": "",
         })
 
-        print("Answer: ", result)
+        print("Memory", retrieve_memories())
+
+        print("--------------------------------")
+
+        print("Answer: ", result["final_answer"])

@@ -28,7 +28,6 @@ def web_search_node(state: AgentState) -> AgentState:
     results = search_tool.invoke(query)
 
     return {
-        **state,
         "current_step_index": state["current_step_index"] + 1,
         "search_results": results,
     }

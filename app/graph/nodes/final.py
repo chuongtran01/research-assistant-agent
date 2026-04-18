@@ -46,7 +46,6 @@ def final_node(state: AgentState) -> AgentState:
     answer = response.answer
 
     return {
-        **state,
-        "chat_history": AIMessage(content=response.answer),
+        "chat_history": [AIMessage(content=response.answer)],
         "final_answer": answer,
     }

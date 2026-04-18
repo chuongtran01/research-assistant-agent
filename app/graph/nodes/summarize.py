@@ -33,7 +33,7 @@ def summarize_node(state: AgentState) -> AgentState:
 
     print("Summarize Node Invoked")
 
-    search_results = "\n".join(state["search_results"])
+    search_results = state["search_results"]
 
     llm = LLM(system_prompt=SYSTEM_PROMPT, structured_output=Summary)
 
@@ -41,7 +41,6 @@ def summarize_node(state: AgentState) -> AgentState:
     response = llm.structured_chat(prompt)
 
     return {
-        **state,
         "summary": response.summary,
         "current_step_index": state["current_step_index"] + 1,
     }

@@ -8,8 +8,6 @@ def router_node(state: AgentState) -> AgentState:
     Executes one step from the plan.
     """
 
-    print("Router Node invoked")
-
     plan = state.get("plan", [])
     idx = state.get("current_step_index", 0)
 
@@ -22,6 +20,5 @@ def router_node(state: AgentState) -> AgentState:
     task = plan[idx]
 
     return {
-        **state,
         "current_task": task,
     }

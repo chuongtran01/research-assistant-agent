@@ -37,7 +37,7 @@ Prior memories:
 
 def search_query_node(state: AgentState) -> AgentState:
     """
-    Generates concrete web-search queries and seeds the queue with search work.
+    Generates concrete web-search queries and seeds one batched search task.
     """
 
     print("Search Query Node invoked")
@@ -74,14 +74,12 @@ def search_query_node(state: AgentState) -> AgentState:
         deduped_queries = [query]
 
     pending_tasks = list(state.get("pending_tasks", []))
-    queued_searches = [
-        {"name": "web_search", "args": {"query": search_query}}
-        for search_query in deduped_queries
-    ]
 
     return {
         "search_queries": deduped_queries,
         "search_results": [],
         "summary": "",
-        "pending_tasks": pending_tasks + queued_searches + [{"name": "summarize", "args": {}}],
+        "pending_tasks": pending_tasks + [
+            {"name": "web_search_batch", "args": {"queries": deduped_queries}}
+        ],
     }

@@ -3,10 +3,11 @@ from graph.state import AgentState
 
 def router_node(state: AgentState) -> AgentState:
     """
-    Normalizes the top-level route selected by the planner.
+    Pops the next task from the queue and exposes it as current_task.
     """
-    route = state.get("route", "direct_answer")
+    pending_tasks = list(state.get("pending_tasks", []))
 
     return {
-        "route": route if route in {"research", "direct_answer"} else "direct_answer",
+        "current_task": pending_tasks.pop(0) if pending_tasks else {"name": "final", "args": {}},
+        "pending_tasks": pending_tasks,
     }

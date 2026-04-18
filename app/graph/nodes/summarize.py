@@ -32,15 +32,18 @@ Search results:
 
 def summarize_node(state: AgentState) -> AgentState:
     """
-    Summarizes the web-search results for the research branch.
+    Summarizes search results and enqueues the next task.
     """
 
     print("Summarize Node Invoked")
 
     search_results = state.get("search_results", [])
+    pending_tasks = list(state.get("pending_tasks", []))
+
     if not search_results:
         return {
             "summary": "No relevant web results were found.",
+            "pending_tasks": pending_tasks + [{"name": "final", "args": {}}],
         }
 
     llm = LLM(system_prompt=SYSTEM_PROMPT, structured_output=Summary)
@@ -53,4 +56,5 @@ def summarize_node(state: AgentState) -> AgentState:
 
     return {
         "summary": response.summary,
+        "pending_tasks": pending_tasks + [{"name": "memory_write", "args": {}}],
     }

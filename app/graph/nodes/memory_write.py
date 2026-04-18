@@ -32,7 +32,7 @@ Information:
 
 def memory_write_node(state: AgentState) -> AgentState:
     """
-    Persists durable facts from the summary into long-term memory.
+    Persists durable facts from the summary and enqueues the final response.
     """
 
     print("Memory Write Node invoked")
@@ -48,13 +48,17 @@ def memory_write_node(state: AgentState) -> AgentState:
 
     facts = response.facts
 
+    pending_tasks = list(state.get("pending_tasks", []))
+
     if not facts:
         return {
             "stored_facts": [],
+            "pending_tasks": pending_tasks + [{"name": "final", "args": {}}],
         }
 
     store_memory(facts)
 
     return {
         "stored_facts": facts,
+        "pending_tasks": pending_tasks + [{"name": "final", "args": {}}],
     }

@@ -41,7 +41,7 @@ def planner_node(state: AgentState) -> AgentState:
     """
     Planner node:
     - examines the user query and retrieved memories
-    - selects a single top-level route for the graph
+    - seeds the executor with the initial task queue
     """
     print("Planner Node invoked")
 
@@ -57,9 +57,13 @@ def planner_node(state: AgentState) -> AgentState:
 
     decision = llm.structured_chat(prompt)
 
-    print("Decision", decision.route)
+    initial_tasks = (
+        [{"name": "search_query", "args": {}}]
+        if decision.route == "research"
+        else [{"name": "final", "args": {}}]
+    )
 
     return {
         "chat_history": [HumanMessage(content=query)],
-        "route": decision.route,
+        "pending_tasks": initial_tasks,
     }

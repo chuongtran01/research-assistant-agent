@@ -1,6 +1,7 @@
 from graph.state import AgentState
 from langgraph.graph import StateGraph, START, END
 from graph.nodes.planner import planner_node
+from graph.nodes.search_query import search_query_node
 from graph.nodes.web_search import web_search_node
 from graph.nodes.summarize import summarize_node
 from graph.nodes.final import final_node
@@ -15,6 +16,7 @@ def build_graph() -> StateGraph:
     graph.add_node("memory_retrieval", memory_retrieval_node)
     graph.add_node("planner", planner_node)
     graph.add_node("router", router_node)
+    graph.add_node("search_query", search_query_node)
     graph.add_node("web_search", web_search_node)
     graph.add_node("summarize", summarize_node)
     graph.add_node("memory_write", memory_write_node)
@@ -26,16 +28,20 @@ def build_graph() -> StateGraph:
 
     graph.add_conditional_edges(
         "router",
-        lambda state: state.get("route", "direct_answer"),
+        lambda state: state["current_task"]["name"],
         {
-            "research": "web_search",
-            "direct_answer": "final",
+            "search_query": "search_query",
+            "web_search": "web_search",
+            "summarize": "summarize",
+            "memory_write": "memory_write",
+            "final": "final",
         },
     )
 
-    graph.add_edge("web_search", "summarize")
-    graph.add_edge("summarize", "memory_write")
-    graph.add_edge("memory_write", "final")
+    graph.add_edge("search_query", "router")
+    graph.add_edge("web_search", "router")
+    graph.add_edge("summarize", "router")
+    graph.add_edge("memory_write", "router")
 
     graph.add_edge("final", END)
 

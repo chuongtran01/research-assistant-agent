@@ -18,7 +18,7 @@ You are a routing agent for a research assistant.
 
 Decide whether the assistant should:
 - research: run web search before answering
-- direct_answer: answer from prior memory alone
+- direct_answer: answer directly without web search
 
 - Choose research when the question depends on fresh, external, missing, or uncertain information
 - Choose direct_answer when the question can be answered well without web search
@@ -60,7 +60,7 @@ def planner_node(state: AgentState) -> AgentState:
     initial_tasks = (
         [{"name": "search_query", "args": {}}]
         if decision.route == "research"
-        else [{"name": "final", "args": {}}]
+        else [{"name": "direct_answer", "args": {}}]
     )
 
     return {

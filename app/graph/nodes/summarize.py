@@ -43,7 +43,7 @@ def summarize_node(state: AgentState) -> AgentState:
     if not search_results:
         return {
             "summary": "No relevant web results were found.",
-            "pending_tasks": pending_tasks + [{"name": "final", "args": {}}],
+            "pending_tasks": pending_tasks + [{"name": "grounded_final", "args": {}}],
         }
 
     llm = LLM(system_prompt=SYSTEM_PROMPT, structured_output=Summary)

@@ -8,6 +8,6 @@ def router_node(state: AgentState) -> AgentState:
     pending_tasks = list(state.get("pending_tasks", []))
 
     return {
-        "current_task": pending_tasks.pop(0) if pending_tasks else {"name": "final", "args": {}},
+        "current_task": pending_tasks.pop(0) if pending_tasks else {"name": "direct_answer", "args": {}},
         "pending_tasks": pending_tasks,
     }

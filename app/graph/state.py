@@ -4,7 +4,14 @@ from langgraph.graph.message import add_messages
 from tools.search_tool import SearchResult
 
 
-TaskName = Literal["search_query", "web_search_batch", "summarize", "memory_write", "final"]
+TaskName = Literal[
+    "search_query",
+    "web_search_batch",
+    "summarize",
+    "memory_write",
+    "direct_answer",
+    "grounded_final",
+]
 
 
 class Task(TypedDict):

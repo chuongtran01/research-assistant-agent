@@ -49,10 +49,12 @@ def memory_write_node(state: AgentState) -> AgentState:
     facts = response.facts
 
     if not facts:
-        return state
+        return {
+            "stored_facts": [],
+        }
 
     store_memory(facts)
 
     return {
-        "current_step_index": state["current_step_index"] + 1,
+        "stored_facts": facts,
     }

@@ -1,6 +1,6 @@
 chromadb
-faiss-cpu
 langchain
+langchain-chroma
 langchain-google-genai
 langchain-tavily
 langgraph

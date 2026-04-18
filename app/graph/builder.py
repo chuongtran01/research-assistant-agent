@@ -26,18 +26,16 @@ def build_graph() -> StateGraph:
 
     graph.add_conditional_edges(
         "router",
-        lambda state: state["current_task"]["name"],
+        lambda state: state.get("route", "direct_answer"),
         {
-            "web_search": "web_search",
-            "summarize": "summarize",
-            "memory_write": "memory_write",
-            "final": "final",
+            "research": "web_search",
+            "direct_answer": "final",
         },
     )
 
     graph.add_edge("web_search", "summarize")
-    graph.add_edge("summarize", "router")
-    graph.add_edge("memory_write", "router")
+    graph.add_edge("summarize", "memory_write")
+    graph.add_edge("memory_write", "final")
 
     graph.add_edge("final", END)
 

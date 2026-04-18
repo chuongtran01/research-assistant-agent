@@ -22,25 +22,35 @@ SYSTEM_PROMPT = """
     """
 
 SUMMARIZE_PROMPT = """
-    {search_results}
-    """
+User query:
+{query}
+
+Search results:
+{search_results}
+"""
 
 
 def summarize_node(state: AgentState) -> AgentState:
     """
-    Summarize node that summarizes the agent's response.
+    Summarizes the web-search results for the research branch.
     """
 
     print("Summarize Node Invoked")
 
-    search_results = state["search_results"]
+    search_results = state.get("search_results", [])
+    if not search_results:
+        return {
+            "summary": "No relevant web results were found.",
+        }
 
     llm = LLM(system_prompt=SYSTEM_PROMPT, structured_output=Summary)
 
-    prompt = SUMMARIZE_PROMPT.format(search_results=search_results)
+    prompt = SUMMARIZE_PROMPT.format(
+        query=state["query"],
+        search_results=search_results,
+    )
     response = llm.structured_chat(prompt)
 
     return {
         "summary": response.summary,
-        "current_step_index": state["current_step_index"] + 1,
     }

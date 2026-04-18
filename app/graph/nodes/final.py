@@ -23,14 +23,20 @@ SYSTEM_PROMPT = """
     """
 
 FINAL_ANSWER_PROMPT = """
-    User query:
-    {query}
-    """
+User query:
+{query}
+
+Relevant prior memory:
+{memory_context}
+
+Research summary:
+{summary}
+"""
 
 
 def final_node(state: AgentState) -> AgentState:
     """
-    Final answer node that returns the final answer.
+    Produces the final answer from retrieved memory and optional research summary.
     """
 
     print("Final Answer Node Invoked")
@@ -38,8 +44,16 @@ def final_node(state: AgentState) -> AgentState:
     llm = LLM(system_prompt=SYSTEM_PROMPT,
               structured_output=FinalAnswer)
 
-    query = state["query"] + "\n\n" + state["summary"]
-    prompt = FINAL_ANSWER_PROMPT.format(query=query)
+    memory_context = state.get("memory_context") or []
+    memory_block = "\n".join(
+        f"- {memory}" for memory in memory_context
+    ) if memory_context else "(none)"
+
+    prompt = FINAL_ANSWER_PROMPT.format(
+        query=state["query"],
+        memory_context=memory_block,
+        summary=state.get("summary", "") or "(none)",
+    )
 
     response = llm.structured_chat(prompt)
 

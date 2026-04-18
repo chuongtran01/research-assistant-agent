@@ -10,11 +10,10 @@ if __name__ == "__main__":
             "query": query,
             "chat_history": [],
             "memory_context": [],
-            "plan": [],
-            "current_step_index": 0,
-            "current_task": None,
+            "route": "direct_answer",
             "search_results": [],
             "summary": "",
+            "stored_facts": [],
             "final_answer": "",
         })
 

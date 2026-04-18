@@ -1,57 +1,28 @@
-from typing import Dict, Any, List
+from typing import Annotated, Literal
 
-from graph.state import AgentState, TaskModel
+from graph.state import AgentState
 from tools.llm import LLM
 from pydantic import BaseModel
-from typing import Annotated
 from langchain_core.messages import HumanMessage
 
 
-class PlanModel(BaseModel):
-    steps: Annotated[List[TaskModel], "A list of steps to execute"]
+class RouteDecision(BaseModel):
+    route: Annotated[
+        Literal["research", "direct_answer"],
+        "Route to research when web search is needed, otherwise direct_answer",
+    ]
 
 
 SYSTEM_PROMPT = """
-You are a planning agent that converts a user query into a sequence of executable steps.
+You are a routing agent for a research assistant.
 
-You are NOT calling functions. You are defining a plan for a state-driven execution system.
+Decide whether the assistant should:
+- research: run web search before answering
+- direct_answer: answer from prior memory alone
 
-Available actions:
-- web_search: performs a web search using the provided query
-- summarize: summarizes search results stored in state
-- memory_write: extracts durable facts from summary and stores them
-- final: produces final answer
-
-Execution model:
-- Steps are executed sequentially by a state machine
-- Some steps use arguments (only when required)
-- Nodes read shared state and/or step arguments
-
-Rules:
-- If external knowledge is needed, start with web_search
-- If relevant memory is sufficient, DO NOT use web_search
-- Always run summarize after web_search
-- Always store useful insights using memory_write
-- Always end with final
-- Keep the plan minimal and efficient
-
-Output format (STRICT):
-
-{
-  "steps": [
-    {
-      "name": "web_search | summarize | memory_write | final",
-      "description": "what this step does",
-      "args": {
-        "query": "only required for web_search"
-      }
-    }
-  ]
-}
-
-Important rules:
-- ONLY web_search should use args.query
-- summarize, memory_write, final should use empty args {}
+- Choose research when the question depends on fresh, external, missing, or uncertain information
+- Choose direct_answer only when the prior memories are clearly sufficient to answer well
+- If the user asks about recent, latest, current, or time-sensitive information, choose research
 - Return ONLY valid JSON
 - No explanation
 - No markdown
@@ -69,12 +40,12 @@ Prior memories (may be empty):
 def planner_node(state: AgentState) -> AgentState:
     """
     Planner node:
-    - takes user query
-    - generates structured execution plan
+    - examines the user query and retrieved memories
+    - selects a single top-level route for the graph
     """
     print("Planner Node invoked")
 
-    llm = LLM(system_prompt=SYSTEM_PROMPT, structured_output=PlanModel)
+    llm = LLM(system_prompt=SYSTEM_PROMPT, structured_output=RouteDecision)
 
     query = state["query"]
 
@@ -84,10 +55,11 @@ def planner_node(state: AgentState) -> AgentState:
 
     prompt = PLANNER_PROMPT.format(query=query, memory_context=memory_block)
 
-    plan = llm.structured_chat(prompt)
+    decision = llm.structured_chat(prompt)
+
+    print("Decision", decision.route)
 
     return {
         "chat_history": [HumanMessage(content=query)],
-        "plan": [step.model_dump() for step in plan.steps],
-        "current_step_index": 0
+        "route": decision.route,
     }

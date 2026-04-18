@@ -20,6 +20,7 @@ class Task(TypedDict):
 
 
 class AgentState(TypedDict, total=False):
+    run_id: Annotated[str, "The identifier for the current graph run"]
     query: Annotated[str, "The query of the agent"]
     chat_history: Annotated[List[BaseMessage],
                             "The chat history of the agent", add_messages]

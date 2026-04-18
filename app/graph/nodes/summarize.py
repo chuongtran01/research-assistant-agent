@@ -1,5 +1,6 @@
 from typing import Annotated
 from graph.state import AgentState
+from observability import trace_node_event
 from pydantic import BaseModel
 from tools.llm import LLM
 
@@ -35,12 +36,19 @@ def summarize_node(state: AgentState) -> AgentState:
     Summarizes search results and enqueues the next task.
     """
 
-    print("Summarize Node Invoked")
+    trace_node_event(state, "summarize", "node_started")
 
     search_results = state.get("search_results", [])
     pending_tasks = list(state.get("pending_tasks", []))
 
     if not search_results:
+        trace_node_event(
+            state,
+            "summarize",
+            "node_completed",
+            summary_preview="No relevant web results were found.",
+            next_task="grounded_final",
+        )
         return {
             "summary": "No relevant web results were found.",
             "pending_tasks": pending_tasks + [{"name": "grounded_final", "args": {}}],
@@ -52,7 +60,22 @@ def summarize_node(state: AgentState) -> AgentState:
         query=state["query"],
         search_results=search_results,
     )
-    response = llm.structured_chat(prompt)
+    response = llm.structured_chat(
+        prompt,
+        trace={
+            "run_id": state.get("run_id"),
+            "node": "summarize",
+            "operation": "summarize_search_results",
+        },
+    )
+
+    trace_node_event(
+        state,
+        "summarize",
+        "node_completed",
+        summary_chars=len(response.summary),
+        next_task="memory_write",
+    )
 
     return {
         "summary": response.summary,

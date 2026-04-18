@@ -1,6 +1,7 @@
 from typing import Annotated, Literal
 
 from graph.state import AgentState
+from observability import trace_node_event
 from tools.llm import LLM
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage
@@ -43,7 +44,7 @@ def planner_node(state: AgentState) -> AgentState:
     - examines the user query and retrieved memories
     - seeds the executor with the initial task queue
     """
-    print("Planner Node invoked")
+    trace_node_event(state, "planner", "node_started")
 
     llm = LLM(system_prompt=SYSTEM_PROMPT, structured_output=RouteDecision)
 
@@ -55,12 +56,27 @@ def planner_node(state: AgentState) -> AgentState:
 
     prompt = PLANNER_PROMPT.format(query=query, memory_context=memory_block)
 
-    decision = llm.structured_chat(prompt)
+    decision = llm.structured_chat(
+        prompt,
+        trace={
+            "run_id": state.get("run_id"),
+            "node": "planner",
+            "operation": "route_decision",
+        },
+    )
 
     initial_tasks = (
         [{"name": "search_query", "args": {}}]
         if decision.route == "research"
         else [{"name": "direct_answer", "args": {}}]
+    )
+
+    trace_node_event(
+        state,
+        "planner",
+        "node_completed",
+        selected_route=decision.route,
+        queued_tasks=[task["name"] for task in initial_tasks],
     )
 
     return {

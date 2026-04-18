@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from langchain_core.messages import AIMessage
+from observability import preview_text, trace_node_event
 from pydantic import BaseModel
 
 from graph.state import AgentState
@@ -50,7 +51,7 @@ def grounded_final_node(state: AgentState) -> AgentState:
     Produces a grounded answer from retrieved memory and research summary.
     """
 
-    print("Grounded Final Node Invoked")
+    trace_node_event(state, "grounded_final", "node_started")
 
     llm = LLM(system_prompt=SYSTEM_PROMPT, structured_output=GroundedFinalAnswer)
 
@@ -64,7 +65,21 @@ def grounded_final_node(state: AgentState) -> AgentState:
         memory_context=memory_block,
         summary=state.get("summary", "") or "(none)",
     )
-    response = llm.structured_chat(prompt)
+    response = llm.structured_chat(
+        prompt,
+        trace={
+            "run_id": state.get("run_id"),
+            "node": "grounded_final",
+            "operation": "answer_from_grounded_context",
+        },
+    )
+
+    trace_node_event(
+        state,
+        "grounded_final",
+        "node_completed",
+        answer_preview=preview_text(response.answer),
+    )
 
     return {
         "chat_history": [AIMessage(content=response.answer)],

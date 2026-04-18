@@ -1,5 +1,6 @@
 from typing import Annotated
 
+from observability import trace_node_event
 from pydantic import BaseModel
 
 from graph.state import AgentState
@@ -40,7 +41,7 @@ def search_query_node(state: AgentState) -> AgentState:
     Generates concrete web-search queries and seeds one batched search task.
     """
 
-    print("Search Query Node invoked")
+    trace_node_event(state, "search_query", "node_started")
 
     llm = LLM(system_prompt=SYSTEM_PROMPT, structured_output=SearchQueryPlan)
 
@@ -54,7 +55,14 @@ def search_query_node(state: AgentState) -> AgentState:
         query=query,
         memory_context=memory_block,
     )
-    response = llm.structured_chat(prompt)
+    response = llm.structured_chat(
+        prompt,
+        trace={
+            "run_id": state.get("run_id"),
+            "node": "search_query",
+            "operation": "generate_search_queries",
+        },
+    )
 
     deduped_queries: list[str] = []
     seen: set[str] = set()
@@ -74,6 +82,13 @@ def search_query_node(state: AgentState) -> AgentState:
         deduped_queries = [query]
 
     pending_tasks = list(state.get("pending_tasks", []))
+
+    trace_node_event(
+        state,
+        "search_query",
+        "node_completed",
+        generated_queries=deduped_queries,
+    )
 
     return {
         "search_queries": deduped_queries,

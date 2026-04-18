@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from langchain_core.messages import AIMessage
+from observability import preview_text, trace_node_event
 from pydantic import BaseModel
 
 from graph.state import AgentState
@@ -47,7 +48,7 @@ def direct_answer_node(state: AgentState) -> AgentState:
     Produces a direct answer from memory and model knowledge without web search.
     """
 
-    print("Direct Answer Node Invoked")
+    trace_node_event(state, "direct_answer", "node_started")
 
     llm = LLM(system_prompt=SYSTEM_PROMPT, structured_output=DirectAnswer)
 
@@ -60,7 +61,21 @@ def direct_answer_node(state: AgentState) -> AgentState:
         query=state["query"],
         memory_context=memory_block,
     )
-    response = llm.structured_chat(prompt)
+    response = llm.structured_chat(
+        prompt,
+        trace={
+            "run_id": state.get("run_id"),
+            "node": "direct_answer",
+            "operation": "answer_from_model_knowledge",
+        },
+    )
+
+    trace_node_event(
+        state,
+        "direct_answer",
+        "node_completed",
+        answer_preview=preview_text(response.answer),
+    )
 
     return {
         "chat_history": [AIMessage(content=response.answer)],

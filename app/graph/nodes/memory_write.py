@@ -1,4 +1,5 @@
 from graph.state import AgentState
+from observability import trace_node_event
 from pydantic import BaseModel
 from typing import Annotated, List
 from tools.llm import LLM
@@ -35,7 +36,7 @@ def memory_write_node(state: AgentState) -> AgentState:
     Persists durable facts from the summary and enqueues the grounded response.
     """
 
-    print("Memory Write Node invoked")
+    trace_node_event(state, "memory_write", "node_started")
 
     llm = LLM(system_prompt=SYSTEM_PROMPT, structured_output=Memory)
 
@@ -44,19 +45,41 @@ def memory_write_node(state: AgentState) -> AgentState:
 
     information = query + "\n\n" + summary
     prompt = MEMORY_PROMPT.format(information=information)
-    response = llm.structured_chat(prompt)
+    response = llm.structured_chat(
+        prompt,
+        trace={
+            "run_id": state.get("run_id"),
+            "node": "memory_write",
+            "operation": "extract_durable_facts",
+        },
+    )
 
     facts = response.facts
 
     pending_tasks = list(state.get("pending_tasks", []))
 
     if not facts:
+        trace_node_event(
+            state,
+            "memory_write",
+            "node_completed",
+            stored_fact_count=0,
+            next_task="grounded_final",
+        )
         return {
             "stored_facts": [],
             "pending_tasks": pending_tasks + [{"name": "grounded_final", "args": {}}],
         }
 
     store_memory(facts)
+
+    trace_node_event(
+        state,
+        "memory_write",
+        "node_completed",
+        stored_fact_count=len(facts),
+        next_task="grounded_final",
+    )
 
     return {
         "stored_facts": facts,

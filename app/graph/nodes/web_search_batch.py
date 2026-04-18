@@ -1,12 +1,16 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from time import perf_counter
 
 from graph.state import AgentState
+from observability import trace_node_event
 from tools.search_tool import SearchTool
 
 
-def _search_once(query: str) -> list[dict]:
+def _search_once(query: str) -> tuple[str, list[dict], float]:
+    started_at = perf_counter()
     search_tool = SearchTool()
-    return search_tool.invoke({"query": query})
+    results = search_tool.invoke({"query": query})
+    return query, results, round((perf_counter() - started_at) * 1000, 2)
 
 
 def web_search_batch_node(state: AgentState) -> AgentState:
@@ -14,7 +18,7 @@ def web_search_batch_node(state: AgentState) -> AgentState:
     Runs batched web searches, merges results, and enqueues summarization.
     """
 
-    print("Web Search Batch Node invoked")
+    trace_node_event(state, "web_search_batch", "node_started")
 
     current_task = state.get(
         "current_task", {"name": "web_search_batch", "args": {}})
@@ -44,6 +48,13 @@ def web_search_batch_node(state: AgentState) -> AgentState:
         normalized_queries.append(query)
 
     if not normalized_queries:
+        trace_node_event(
+            state,
+            "web_search_batch",
+            "node_completed",
+            searched_queries=[],
+            total_result_count=0,
+        )
         return {
             "search_results": [],
             "pending_tasks": pending_tasks + [{"name": "summarize", "args": {}}],
@@ -52,18 +63,40 @@ def web_search_batch_node(state: AgentState) -> AgentState:
     max_workers = min(len(normalized_queries), 3)
     collected_results: list[dict] = []
 
+    trace_node_event(
+        state,
+        "web_search_batch",
+        "batch_search_started",
+        search_queries=normalized_queries,
+        max_workers=max_workers,
+    )
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        print(f"Searching for queries: {normalized_queries}")
         futures = {
             executor.submit(_search_once, query): query
             for query in normalized_queries
         }
         for future in as_completed(futures):
             try:
-                collected_results.extend(future.result())
+                query, results, duration_ms = future.result()
+                collected_results.extend(results)
+                trace_node_event(
+                    state,
+                    "web_search_batch",
+                    "search_query_completed",
+                    query=query,
+                    result_count=len(results),
+                    duration_ms=duration_ms,
+                )
             except Exception as exc:
                 query = futures[future]
-                print(f"Web search failed for query '{query}': {exc}")
+                trace_node_event(
+                    state,
+                    "web_search_batch",
+                    "search_query_failed",
+                    query=query,
+                    error=str(exc),
+                )
 
     deduped_results = []
     seen_urls: set[str] = set()
@@ -74,6 +107,14 @@ def web_search_batch_node(state: AgentState) -> AgentState:
         if url:
             seen_urls.add(url)
         deduped_results.append(result)
+
+    trace_node_event(
+        state,
+        "web_search_batch",
+        "node_completed",
+        searched_queries=normalized_queries,
+        total_result_count=len(deduped_results),
+    )
 
     return {
         "search_results": deduped_results,
